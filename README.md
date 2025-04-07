@@ -1,6 +1,8 @@
 # BH1750FVI-python
 BH1750FVI Ambient Light I2C Sensor Python and Micropython drivers
 
+![image](https://github.com/user-attachments/assets/dc8ebf88-595a-4cda-bf0f-ed0008698b77)
+
 ## References
 - Gravity: I2C IP68 Waterproof Ambient Light Sensor (1-65535lx)
   - [Product page](https://www.dfrobot.com/product-2664.html)
