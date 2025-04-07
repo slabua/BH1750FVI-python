@@ -14,28 +14,43 @@ __status__ = "Development"
 from time import sleep
 from smbus2 import SMBus
 
-I2C_ADDRESS = 0x23
-CMD_CONT_HIGH_RES_MODE = 0x10  # Corresponds to register 0x10
 
+class BH1750FVI:
+    DEFAULT_I2C_ADDR = 0x23
+    CMD_CONT_HIGH_RES_MODE = 0x10
 
-def read_lux(bus):
-    # Write measurement command
-    bus.write_byte(I2C_ADDRESS, CMD_CONT_HIGH_RES_MODE)
-    sleep(0.02)  # 20ms delay (sensor needs this time to measure)
+    def __init__(self, bus_num=1, address=DEFAULT_I2C_ADDR):
+        self.address = address
+        self.bus = SMBus(bus_num)
 
-    # Read 2 bytes of data
-    data = bus.read_i2c_block_data(I2C_ADDRESS, CMD_CONT_HIGH_RES_MODE, 2)
-    raw = (data[0] << 8) | data[1]
-    lux = raw / 1.2  # Convert to lux
-    return lux
+    def read_lux(self):
+        # Write measurement command
+        self.bus.write_byte(self.address, self.CMD_CONT_HIGH_RES_MODE)
+        sleep(0.02)  # 20ms delay to allow sensor measurement
+
+        # Read 2 bytes of data
+        data = self.bus.read_i2c_block_data(
+            self.address, self.CMD_CONT_HIGH_RES_MODE, 2
+        )
+        raw = (data[0] << 8) | data[1]
+        return raw / 1.2  # Convert to lux
+
+    def close(self):
+        self.bus.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
 def main():
-    with SMBus(1) as bus:  # I2C bus 1 is default on Raspberry Pi
+    with BH1750FVI() as sensor:
         while True:
-            lux = read_lux(bus)
+            lux = sensor.read_lux()
             print(f"LUX: {lux:.2f} lx")
-            sleep(0.5)  # 500ms delay
+            sleep(0.5)
 
 
 if __name__ == "__main__":

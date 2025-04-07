@@ -14,26 +14,33 @@ __status__ = "Development"
 from machine import I2C, Pin
 from utime import sleep, sleep_ms
 
-I2C_ADDRESS = 0x23
-CMD_CONT_HIGH_RES_MODE = 0x10  # Continuous high resolution mode
 
-# Initialize I2C (I2C0 on GPIO 0 = SDA, GPIO 1 = SCL)
-i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
+class BH1750FVI:
+    DEFAULT_I2C_ADDR = 0x23
+    CMD_CONT_HIGH_RES_MODE = 0x10
+
+    def __init__(self, i2c=None, scl=1, sda=0, freq=100000, address=DEFAULT_I2C_ADDR):
+        self.address = address
+        if i2c is None:
+            self.i2c = I2C(0, scl=Pin(scl), sda=Pin(sda), freq=freq)
+        else:
+            self.i2c = i2c
+
+    def read_lux(self):
+        self.i2c.writeto(self.address, bytes([self.CMD_CONT_HIGH_RES_MODE]))
+        sleep_ms(20)  # Wait for measurement
+        data = self.i2c.readfrom(self.address, 2)
+        raw = (data[0] << 8) | data[1]
+        return raw / 1.2
 
 
-def read_lux():
-    # Send measurement command
-    i2c.writeto(I2C_ADDRESS, bytes([CMD_CONT_HIGH_RES_MODE]))
-    sleep_ms(20)  # Wait for measurement
-
-    # Read 2 bytes of data
-    data = i2c.readfrom(I2C_ADDRESS, 2)
-    raw = (data[0] << 8) | data[1]
-    lux = raw / 1.2
-    return lux
+def main():
+    sensor = BH1750FVI()
+    while True:
+        lux = sensor.read_lux()
+        print("LUX: {:.2f} lx".format(lux))
+        sleep(0.5)
 
 
-while True:
-    lux = read_lux()
-    print("LUX: {:.2f} lx".format(lux))
-    sleep(0.5)
+if __name__ == "__main__":
+    main()
